@@ -58,6 +58,10 @@ func createTestConn(string) (Conn, error) {
 	return conn, nil
 }
 
+func closeTestConn(conn Conn) error {
+	return nil
+}
+
 type TestErrConn struct {
 	a int
 }
@@ -72,7 +76,7 @@ func (conn *TestErrConn) AliveCheck() bool {
 
 func TestEndPointInfo(t *testing.T) {
 	ep := &EndPointInfo{}
-	ep.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn)
+	ep.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn, closeTestConn, nil)
 	for i := 0; i< 10; i += 1 {
 		c, err := ep.GetConn(time.Second)
 		if err != nil {
@@ -88,7 +92,7 @@ func TestEndPointInfo(t *testing.T) {
 		t.Error("Invalid GetConn")
 	}
 	ep1 := &EndPointInfo{}
-	ep1.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn)
+	ep1.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn, closeTestConn, nil)
 	c, err := ep1.GetConn(time.Second)
 	if err != nil {
 		t.Error("Invalid GetConn")
@@ -134,20 +138,20 @@ func TestEndPointInfo(t *testing.T) {
 	}
 
 	ep2 := &EndPointInfo{}
-	ep2.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn)
+	ep2.Init("host1", 10, 100, 1, 0.5, time.Minute, time.Minute, createTestConn, closeTestConn, nil)
 	c, err = ep2.GetConn(0)
+	fmt.Println("###########################")
 	ep2.PutConn(c)
-
 	//放到池子里的连接，下一次能能取出来
 	c1, _ := ep2.GetConn(0)
-	if c != c1 {
-		t.Error("Invalid GetConn")
+	if c.GetRaw() != c1.GetRaw() {
+		t.Error("Invalid GetConn:", c.GetRaw(), c1.GetRaw())
 	}
 }
 
 func TestWConnPool(t *testing.T) {
 	pool := WConnPool{}
-	pool.Init(100, time.Minute, createTestConn)
+	pool.Init(100, createTestConn, closeTestConn, nil)
 	pool.AddHost("host1", 10, 0.5)
 	pool.AddHost("host2", 10, 0.5)
 	cw1, _  := pool.GetConn(0)
